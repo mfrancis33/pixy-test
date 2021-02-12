@@ -36,12 +36,12 @@ public class Robot extends TimedRobot {
   @Override
   public void teleopPeriodic(){
     state = pixycam.init(1); // if no camera present, try to initialize
-    isCamera = state >= 0 ;
+    isCamera = (state >= 0);
     SmartDashboard.putBoolean("Camera", isCamera); //publish if we areconnected
     pixycam.getCCC().getBlocks(false, Pixy2CCC.CCC_SIG1 , 48); //run getBlocks with arguments to have the camera
     //acquire target data
     ArrayList<Block> blocks = pixycam.getCCC().getBlockCache(); //assign the data to an ArrayList for convinience
-    if (blocks.size() > 0 ) {
+    if (blocks.size() > 0) {
       double xcoord = blocks.get(0).getX(); // x position of the largest target
       double ycoord = blocks.get(0).getY(); // y position of the largest target
       String data = blocks.get(0).toString(); // string containing target info
