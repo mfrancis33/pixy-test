@@ -11,6 +11,8 @@ import io.github.pseudoresonance.pixy2api.Pixy2CCC.Block;
  * build.gradle file. See the attached tutorial document 2.) This code is for
  * using Chip Select 0 (CS0) and the onboard SPI Port 3.) If you are using SPI
  * mode, go into PixyMon and set the control mode to SPI
+ * 
+ * https://andymark-weblinc.netdna-ssl.com/media/W1siZiIsIjIwMTkvMDcvMTIvMTQvMjUvNDgvOTc0MGNkOGItMmRlOS00Mjc4LWFlYzEtMmY0ZGUyMGI1Y2NhL1BpeHlDYW0gU1BJIEluc3RydWN0aW9ucy5wZGYiXV0/PixyCam%20SPI%20Instructions.pdf?sha=e16096fe11ed8b61
  */
 public class Robot extends TimedRobot {
   /**
@@ -35,10 +37,15 @@ public class Robot extends TimedRobot {
 
   @Override
   public void teleopPeriodic(){
-    state = pixycam.init(1); // if no camera present, try to initialize
+    //Change the 0 to the chip select the Pixy is plugged into
+    if(!isCamera)
+      state = pixycam.init(0); // if no camera present, try to initialize
+    
+    //Detect connection
     isCamera = (state >= 0);
-    SmartDashboard.putBoolean("Camera", isCamera); //publish if we areconnected
-    pixycam.getCCC().getBlocks(false, Pixy2CCC.CCC_SIG1 , 48); //run getBlocks with arguments to have the camera
+    SmartDashboard.putNumber("State", state); //Put state to check for errors
+    SmartDashboard.putBoolean("Camera", isCamera); //Publish if we are connected
+    pixycam.getCCC().getBlocks(false, Pixy2CCC.CCC_SIG1, 48); //run getBlocks with arguments to have the camera
     //acquire target data
     ArrayList<Block> blocks = pixycam.getCCC().getBlockCache(); //assign the data to an ArrayList for convinience
     if (blocks.size() > 0) {
