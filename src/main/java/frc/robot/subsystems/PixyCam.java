@@ -1,0 +1,209 @@
+package frc.robot.subsystems;
+
+import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+import java.util.ArrayList;
+import io.github.pseudoresonance.pixy2api.*;
+import io.github.pseudoresonance.pixy2api.Pixy2CCC.Block;
+
+/**
+ * The code for retrieving PixyCam values from the SPI
+ * @author M. Francis
+ */
+public class PixyCam extends SubsystemBase {
+
+	//PixyCam
+	private Pixy2 pixycam;
+	private boolean isCamera = false;
+	private int state = -1;
+	private int chip;
+	private int numberOfTargets = 0;
+	private boolean seesTarget = false;
+
+	//For efficiency
+	private int cacheNumber = 0;
+	private int lastLargestBlockRetrieval = -1;
+	private Block lastLargestBlock;
+
+	//Debug mode
+	private final boolean DEBUG = true;
+
+	/**
+	 * Subsystem for the PixyCam
+	 * @param chipselect The chip the pixy is plugged into on the SPI
+	 */
+	public PixyCam(int chipselect){
+		chip = chipselect;
+		pixycam = Pixy2.createInstance(Pixy2.LinkType.SPI);
+		state = pixycam.init(chip);
+	}
+
+	@Override
+	public void periodic(){
+		// This method will be called once per scheduler run
+
+		//If there is no camera present, try to initialize it.
+		if(!isCamera)
+			state = pixycam.init(chip);
+
+		//Detect connection
+		isCamera = (state >= 0);
+		SmartDashboard.putNumber("Pixy " + chip + " State", state);
+		SmartDashboard.putBoolean("Pixy " + chip + " Connected", isCamera);
+		SmartDashboard.putBoolean("Pixy " + chip + " sees target", seesTarget);
+
+		if(DEBUG){
+			//Acquire target data
+			updateTargets();
+			if(numberOfTargets > 0){
+				//Get the largest target
+				Block lt = getLargestTarget(); //Gets the largest target (lt)
+				SmartDashboard.putNumber("Largest Target X-Coord", lt.getX());
+				SmartDashboard.putNumber("Largest Target Y-Coord", lt.getY());
+				SmartDashboard.putNumber("Largest Target Angle", lt.getAngle());
+				SmartDashboard.putNumber("Largest Target Width", lt.getWidth());
+				SmartDashboard.putNumber("Largest Target Height", lt.getHeight());
+			}
+			//Push to dashboard how many targets are detected
+			SmartDashboard.putNumber("Number of Targets", numberOfTargets); 
+		}
+	}
+
+	/**
+	 * Refreshes the target cache.
+	 */
+	public void updateTargets(){
+		//Retrieve the targets and store the number in a variable
+		numberOfTargets = pixycam.getCCC().getBlocks(false, Pixy2CCC.CCC_SIG1, 48);
+		//Update the cache number
+		cacheNumber++;
+		//Update the seesTarget variable
+		if(numberOfTargets > 0) seesTarget = true;
+		else seesTarget = false;
+	}
+
+	/**
+	 * Gets all cached targets. Be sure to update it with updateTargets()
+	 * @return An ArrayList of target data.
+	 */
+	public ArrayList<Block> getAllTargets(){
+		//Retrieve all blocks
+		ArrayList<Block> blocks = pixycam.getCCC().getBlockCache();
+		return blocks;
+	}
+
+	/**
+	 * Gets the largest target.
+	 * @return A Block class containing the largest target
+	 * @see Block
+	 */
+	public Block getLargestTarget(){
+		//See if we already have the largest Block (to be efficient)
+		if(lastLargestBlockRetrieval == cacheNumber){
+			SmartDashboard.putNumber("lastRetrieval", lastLargestBlockRetrieval);
+			SmartDashboard.putNumber("cacheNumber", cacheNumber);
+			return lastLargestBlock;
+		}
+
+		//Check to see if there are any targets.
+		if(numberOfTargets <= 0){
+			return null;
+		}
+		//Get all the targets
+		ArrayList<Block> blocks = getAllTargets();
+		Block largestBlock = null;
+		//Loops through all targets and finds the widest one
+		for(Block block : blocks){
+			if(largestBlock == null){
+				//If this is the first iteration, set largestBlock to the current block.
+				largestBlock = block;
+			} else if(block.getWidth() > largestBlock.getWidth()){
+				//If we find a wider block, set largestBlock to the current block.
+				largestBlock = block;
+			}
+		}
+
+		//Update the last time we looked for the largest Block
+		lastLargestBlockRetrieval = cacheNumber;
+		//Store this Block
+		lastLargestBlock = largestBlock;
+		//Return the Blocks
+		SmartDashboard.putString("Largest block", largestBlock.toString());
+		return largestBlock;
+	}
+
+	/**
+	 * @return Returns the age of the largest target
+	 */
+	public int getLargestTargetAge(){
+		Block largestTarget = getLargestTarget();
+		if(largestTarget == null) return -1;
+		return largestTarget.getAge();
+	}
+	/**
+	 * @return Returns the x-coordinate of the largest target
+	 */
+	public int getLargestTargetX(){
+		Block largestTarget = getLargestTarget();
+		if(largestTarget == null) return -1;
+		return largestTarget.getX();
+	}
+	/**
+	 * @return Returns the y-coordinate of the largest target
+	 */
+	public int getLargestTargetY(){
+		Block largestTarget = getLargestTarget();
+		if(largestTarget == null) return -1;
+		return largestTarget.getY();
+	}
+	/**
+	 * @return Returns the angle to the largest target
+	 */
+	public int getLargestTargetAngle(){
+		Block largestTarget = getLargestTarget();
+		if(largestTarget == null) return -1;
+		return largestTarget.getAngle();
+	}
+	/**
+	 * @return Returns the index of the largest target
+	 */
+	public int getLargestTargetIndex(){
+		Block largestTarget = getLargestTarget();
+		if(largestTarget == null) return -1;
+		return largestTarget.getIndex();
+	}
+	/**
+	 * @return Returns the width of the largest target
+	 */
+	public int getLargestTargetWidth(){
+		Block largestTarget = getLargestTarget();
+		if(largestTarget == null) return -1;
+		return largestTarget.getWidth();
+	}
+	/**
+	 * @return Returns the height of the largest target
+	 */
+	public int getLargestTargetHeight(){
+		Block largestTarget = getLargestTarget();
+		if(largestTarget == null) return -1;
+		return largestTarget.getHeight();
+	}
+
+	/**
+	 * Gets a specific target from the cache. Make sure to update it with updateTargets()
+	 * @param index The index to retrieve from
+	 * @return The Block at the index specified
+	 * @see Block
+	 */
+	public Block getTarget(int index){
+		ArrayList<Block> blocks = getAllTargets();
+		if(blocks == null) return null;
+
+		//Check to ensure there are blocks available
+		if(blocks.size() > 0){
+			return blocks.get(index);
+		} else {
+			return null;
+		}
+	}
+}

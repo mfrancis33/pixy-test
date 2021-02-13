@@ -1,66 +1,70 @@
 package frc.robot;
 
-import java.util.ArrayList;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-import io.github.pseudoresonance.pixy2api.*;
-import io.github.pseudoresonance.pixy2api.Pixy2CCC.Block;
+import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import frc.robot.subsystems.PixyCam;
 
 /**
  * PIXY SPI EXAMPLE A few notes 1.) Two things need to be added to the
  * build.gradle file. See the attached tutorial document 2.) This code is for
  * using Chip Select 0 (CS0) and the onboard SPI Port 3.) If you are using SPI
  * mode, go into PixyMon and set the control mode to SPI
- * 
- * https://andymark-weblinc.netdna-ssl.com/media/W1siZiIsIjIwMTkvMDcvMTIvMTQvMjUvNDgvOTc0MGNkOGItMmRlOS00Mjc4LWFlYzEtMmY0ZGUyMGI1Y2NhL1BpeHlDYW0gU1BJIEluc3RydWN0aW9ucy5wZGYiXV0/PixyCam%20SPI%20Instructions.pdf?sha=e16096fe11ed8b61
  */
 public class Robot extends TimedRobot {
   /**
    * This function is run when the robot is first started up and should be used
    * for any initialization code.
    */
-  private Pixy2 pixycam;
-  boolean isCamera = false ;
-  // private SPILink spi;
-  int state = -1;
-  private int iter = 0;
+
+  public String gameData;
+
+  public static PixyCam PixyCam;
 
   @Override
   public void robotInit(){
+    PixyCam = new PixyCam(0);
+  }
+
+  @Override
+  public void robotPeriodic(){
+    gameData = DriverStation.getInstance().getGameSpecificMessage();
+    CommandScheduler.getInstance().run();
+    SmartDashboard.putString("Game Data", gameData);
+  }
+
+  @Override
+  public void autonomousInit(){
+    //
+  }
+
+  @Override
+  public void autonomousPeriodic(){
     //
   }
 
   @Override
   public void teleopInit(){
-    pixycam = Pixy2.createInstance(Pixy2.LinkType.SPI);
+    //
   }
 
   @Override
   public void teleopPeriodic(){
-    //Change the 0 to the chip select the Pixy is plugged into
-    if(!isCamera)
-      state = pixycam.init(0); // if no camera present, try to initialize
-    
-    //Detect connection
-    isCamera = (state >= 0);
-    SmartDashboard.putNumber("State", state); //Put state to check for errors
-    SmartDashboard.putBoolean("Camera", isCamera); //Publish if we are connected
-    pixycam.getCCC().getBlocks(false, Pixy2CCC.CCC_SIG1, 48); //run getBlocks with arguments to have the camera
-    //acquire target data
-    ArrayList<Block> blocks = pixycam.getCCC().getBlockCache(); //assign the data to an ArrayList for convinience
-    if (blocks.size() > 0) {
-      double xcoord = blocks.get(0).getX(); // x position of the largest target
-      double ycoord = blocks.get(0).getY(); // y position of the largest target
-      String data = blocks.get(0).toString(); // string containing target info
-      SmartDashboard.putBoolean("present", true); // show there is a target present
-      SmartDashboard.putNumber("Xccord", xcoord);
-      SmartDashboard.putNumber("Ycoord", ycoord);
-      SmartDashboard.putString("Data", data);
-    } else {
-      SmartDashboard.putBoolean("present", false);
-    }
-    SmartDashboard.putNumber("size", blocks.size()); //push to dashboard how many targets are detected
-    SmartDashboard.putNumber("iter", iter);
-    iter++;
+    //
+  }
+
+  @Override
+  public void testInit() {
+    // Cancels all running commands at the start of test mode.
+    CommandScheduler.getInstance().cancelAll();
+  }
+
+  /**
+   * This function is called periodically during test mode.
+   */
+  @Override
+  public void testPeriodic() {
+    //
   }
 }
