@@ -95,7 +95,7 @@ public class PixyCam extends SubsystemBase {
 
 	/**
 	 * Gets the largest target.
-	 * @return A Block class containing the largest target
+	 * @return A Block class containing the largest target.
 	 * @see Block
 	 */
 	public Block getLargestTarget(){
@@ -134,15 +134,7 @@ public class PixyCam extends SubsystemBase {
 	}
 
 	/**
-	 * @return Returns the age of the largest target
-	 */
-	public int getLargestTargetAge(){
-		Block largestTarget = getLargestTarget();
-		if(largestTarget == null) return -1;
-		return largestTarget.getAge();
-	}
-	/**
-	 * @return Returns the x-coordinate of the largest target
+	 * @return Returns the x-coordinate of the largest target.
 	 */
 	public int getLargestTargetX(){
 		Block largestTarget = getLargestTarget();
@@ -150,7 +142,7 @@ public class PixyCam extends SubsystemBase {
 		return largestTarget.getX();
 	}
 	/**
-	 * @return Returns the y-coordinate of the largest target
+	 * @return Returns the y-coordinate of the largest target.
 	 */
 	public int getLargestTargetY(){
 		Block largestTarget = getLargestTarget();
@@ -168,7 +160,7 @@ public class PixyCam extends SubsystemBase {
 		return ((x / 316) * 60) - 30;
 	}
 	/**
-	 * @return Returns the width of the largest target
+	 * @return Returns the width of the largest target.
 	 */
 	public int getLargestTargetWidth(){
 		Block largestTarget = getLargestTarget();
@@ -176,7 +168,8 @@ public class PixyCam extends SubsystemBase {
 		return largestTarget.getWidth();
 	}
 	/**
-	 * @return Returns the height of the largest target
+	 * @return Returns the height of the largest target.
+	 * This is generally going to be smaller than the width because of lighting.
 	 */
 	public int getLargestTargetHeight(){
 		Block largestTarget = getLargestTarget();
