@@ -57,12 +57,13 @@ public class PixyCam extends SubsystemBase {
 			updateTargets();
 			if(numberOfTargets > 0){
 				//Get the largest target
-				Block lt = getLargestTarget(); //Gets the largest target (lt)
-				SmartDashboard.putNumber("Largest Target X-Coord", lt.getX());
-				SmartDashboard.putNumber("Largest Target Y-Coord", lt.getY());
-				SmartDashboard.putNumber("Largest Target Angle", lt.getAngle());
-				SmartDashboard.putNumber("Largest Target Width", lt.getWidth());
-				SmartDashboard.putNumber("Largest Target Height", lt.getHeight());
+				// Block lt = getLargestTarget(); //Gets the largest target (lt)
+				SmartDashboard.putString("Largest block", getLargestTarget().toString());
+				SmartDashboard.putNumber("Largest Target X-Coord", getLargestTargetX());
+				SmartDashboard.putNumber("Largest Target Y-Coord", getLargestTargetY());
+				SmartDashboard.putNumber("Largest Target Angle", getLargestTargetAngle());
+				SmartDashboard.putNumber("Largest Target Width", getLargestTargetWidth());
+				SmartDashboard.putNumber("Largest Target Height", getLargestTargetHeight());
 			}
 			//Push to dashboard how many targets are detected
 			SmartDashboard.putNumber("Number of Targets", numberOfTargets); 
@@ -157,20 +158,14 @@ public class PixyCam extends SubsystemBase {
 		return largestTarget.getY();
 	}
 	/**
-	 * @return Returns the angle to the largest target
+	 * @return Returns the angle to the largest target in degrees from the center of the camera.
+	 * Ranges from -30 to 30. Returns 0.0 if no target was found.
 	 */
-	public int getLargestTargetAngle(){
-		Block largestTarget = getLargestTarget();
-		if(largestTarget == null) return -1;
-		return largestTarget.getAngle();
-	}
-	/**
-	 * @return Returns the index of the largest target
-	 */
-	public int getLargestTargetIndex(){
-		Block largestTarget = getLargestTarget();
-		if(largestTarget == null) return -1;
-		return largestTarget.getIndex();
+	public double getLargestTargetAngle(){
+		double x = (double)getLargestTargetX();
+		if(x == -1) return 0.0;
+		//316 is the width of the camera
+		return ((x / 316) * 60) - 30;
 	}
 	/**
 	 * @return Returns the width of the largest target
@@ -187,23 +182,5 @@ public class PixyCam extends SubsystemBase {
 		Block largestTarget = getLargestTarget();
 		if(largestTarget == null) return -1;
 		return largestTarget.getHeight();
-	}
-
-	/**
-	 * Gets a specific target from the cache. Make sure to update it with updateTargets()
-	 * @param index The index to retrieve from
-	 * @return The Block at the index specified
-	 * @see Block
-	 */
-	public Block getTarget(int index){
-		ArrayList<Block> blocks = getAllTargets();
-		if(blocks == null) return null;
-
-		//Check to ensure there are blocks available
-		if(blocks.size() > 0){
-			return blocks.get(index);
-		} else {
-			return null;
-		}
 	}
 }
