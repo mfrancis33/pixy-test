@@ -4,27 +4,27 @@ import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import frc.robot.subsystems.PixyCam;
+import frc.robot.subsystems.PixyCamSPI;
 
 /**
- * PIXY SPI EXAMPLE A few notes 1.) Two things need to be added to the
- * build.gradle file. See the attached tutorial document 2.) This code is for
- * using Chip Select 0 (CS0) and the onboard SPI Port 3.) If you are using SPI
- * mode, go into PixyMon and set the control mode to SPI
+ * A demonstration of various methods of using the PixyCam.
+ * 
+ * This was mainly created for using the SPI port to get information, however
+ * there is another subsystem for using the analog/digital ports instead.
  */
 public class Robot extends TimedRobot {
+
+  public String gameData;
+
+  public static PixyCamSPI PixyCamSPI;
+
   /**
    * This function is run when the robot is first started up and should be used
    * for any initialization code.
    */
-
-  public String gameData;
-
-  public static PixyCam PixyCam;
-
   @Override
   public void robotInit(){
-    PixyCam = new PixyCam(0);
+    PixyCamSPI = new PixyCamSPI(0);
   }
 
   @Override
