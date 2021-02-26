@@ -8,7 +8,7 @@ import io.github.pseudoresonance.pixy2api.Pixy2CCC.Block;
 
 /**
  * The code for retrieving information from the PixyCam using the SPI port
- * @author M. Francis
+ * @author M. Francis, Nicholas Stokes
  */
 public class PixyCamSPI extends SubsystemBase {
 
