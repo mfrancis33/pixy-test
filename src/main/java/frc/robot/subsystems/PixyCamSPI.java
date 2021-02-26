@@ -14,15 +14,16 @@ public class PixyCamSPI extends SubsystemBase {
 
   //PixyCam
   private Pixy2 pixycam;
-  private boolean isCamera = false;
-  private int state = -1;
+  private int state;
   private int chip;
-  private int numberOfTargets = 0;
-  private boolean seesTarget = false;
+  private int numberOfTargets;
+  private boolean connected;
+  private boolean seesTarget;
+  private boolean retrievedState;
 
   //For efficiency
-  private int cacheNumber = 0;
-  private int lastLargestBlockRetrieval = -1;
+  private int cacheNumber;
+  private int lastLargestBlockRetrieval;
   private Block lastLargestBlock;
 
   //Debug mode
@@ -33,30 +34,50 @@ public class PixyCamSPI extends SubsystemBase {
    * @param chipselect The chip the pixy is plugged into on the SPI
    */
   public PixyCamSPI(int chipselect){
-    chip = chipselect;
+    //Create a link
     pixycam = Pixy2.createInstance(Pixy2.LinkType.SPI);
-    state = pixycam.init(chip);
+    state = pixycam.init(chipselect);
+    //Initialize variables
+    connected = (state >= 0);
+    chip = chipselect;
+    seesTarget = false;
+    retrievedState = false;
+    cacheNumber = 0;
+    lastLargestBlockRetrieval = -1;
+    numberOfTargets = 0;
   }
 
+  // This method will be called once per scheduler run
   @Override
   public void periodic(){
-    // This method will be called once per scheduler run
 
-    //If there is no camera present, try to initialize it.
-    if(!isCamera)
+    //DO NOT REMOVE THIS LINE OF CODE EVER
+    updateTargets();
+
+    //Check to see if the camera initialized correctly.
+    if(!connected && !retrievedState){
+      //If we got here, the camera gave us an error.
+      //Try to reinitialize the Pixy.
       state = pixycam.init(chip);
+      //If we get another error, don't check again.
+      //Keep the error code for reference
+      if(state < 0) retrievedState = true;
+    }
 
     //Detect connection
-    isCamera = (state >= 0);
+    connected = (state >= 0);
+
+    //Put important information to the SmartDashboard
     SmartDashboard.putNumber("Pixy " + chip + " State", state);
-    SmartDashboard.putBoolean("Pixy " + chip + " Connected", isCamera);
+    SmartDashboard.putBoolean("Pixy " + chip + " Connected", connected);
     SmartDashboard.putBoolean("Pixy " + chip + " sees target", seesTarget);
 
+    //Debug testing
     if(DEBUG){
       //Acquire target data
-      updateTargets();
-      if(numberOfTargets > 0){
-        //Put other information if we have DEBUG mode on.
+      if(seesTarget){
+        //Get the largest target
+        // Block lt = getLargestTarget(); //Gets the largest target (lt)
         SmartDashboard.putString("Largest block", getLargestTarget().toString());
         SmartDashboard.putNumber("Largest Target X-Coord", getLargestTargetX());
         SmartDashboard.putNumber("Largest Target Y-Coord", getLargestTargetY());
@@ -65,14 +86,16 @@ public class PixyCamSPI extends SubsystemBase {
         SmartDashboard.putNumber("Largest Target Height", getLargestTargetHeight());
       }
       //Push to dashboard how many targets are detected
-      SmartDashboard.putNumber("Number of Targets", numberOfTargets); 
+      SmartDashboard.putNumber("Number of Targets", getNumberOfTargets());
     }
   }
 
   /**
    * Refreshes the target cache.
    */
-  public void updateTargets(){
+  private void updateTargets(){
+    //If the Pixy is returning an error, don't update the targets.
+    if(state < 0) return;
     //Retrieve the targets and store the number in a variable
     numberOfTargets = pixycam.getCCC().getBlocks(false, Pixy2CCC.CCC_SIG1, 48);
     //Update the cache number
@@ -83,13 +106,19 @@ public class PixyCamSPI extends SubsystemBase {
   }
 
   /**
+   * @return The number of targets in view of the camera (or the last number retrieved)
+   */
+  public int getNumberOfTargets(){
+    return numberOfTargets;
+  }
+
+  /**
    * Gets all cached targets. Be sure to update it with updateTargets()
    * @return An ArrayList of target data.
    */
   public ArrayList<Block> getAllTargets(){
     //Retrieve all blocks
-    ArrayList<Block> blocks = pixycam.getCCC().getBlockCache();
-    return blocks;
+    return pixycam.getCCC().getBlockCache();
   }
 
   /**
@@ -106,9 +135,8 @@ public class PixyCamSPI extends SubsystemBase {
     }
 
     //Check to see if there are any targets.
-    if(numberOfTargets <= 0){
-      return null;
-    }
+    if(!seesTarget) return null;
+
     //Get all the targets
     ArrayList<Block> blocks = getAllTargets();
     Block largestBlock = null;
@@ -133,46 +161,73 @@ public class PixyCamSPI extends SubsystemBase {
   }
 
   /**
-   * @return Returns the x-coordinate of the largest target.
+   * @return Returns the x-coordinate of the largest target from 0-315. 
+   * Returns -1 if there isn't a target.
    */
   public int getLargestTargetX(){
+    //Get the largest target
     Block largestTarget = getLargestTarget();
-    if(largestTarget == null) return -1;
+    //Return -1 if there was no target
+    if(largestTarget == null)
+      return -1;
+    //Return the requested value
     return largestTarget.getX();
   }
+
   /**
-   * @return Returns the y-coordinate of the largest target.
+   * @return Returns the y-coordinate of the largest target from 0-207. 
+   * Returns -1 if there isn't a target.
    */
   public int getLargestTargetY(){
+    //Get the largest target
     Block largestTarget = getLargestTarget();
-    if(largestTarget == null) return -1;
+    //Return -1 if there was no target
+    if(largestTarget == null)
+      return -1;
+    //Return the requested value
     return largestTarget.getY();
   }
+
   /**
    * @return Returns the angle to the largest target in degrees from the center of the camera.
    * Ranges from -30 to 30. Returns 0.0 if no target was found.
    */
   public double getLargestTargetAngle(){
-    double x = (double)getLargestTargetX();
-    if(x == -1) return 0.0;
-    //316 is the width of the camera
-    return ((x / 316) * 60) - 30;
+    double x = getLargestTargetX();
+    //Return 0 (centered) if no target was found
+    if(!seesTarget)
+      return 0.0;
+    /**
+     * To get the angle, we divide the x (which ranges from 0 to 315, the width
+     * of the camera) by 315 to get it as a percentage from 0-1. We multiply
+     * that by 60 (the field of view of the PixyCam) to get it in terms of
+     * degrees, and then subtract it by 30 to center it.
+     */
+    return ((x / 315) * 60) - 30;
   }
+
   /**
    * @return Returns the width of the largest target.
    */
   public int getLargestTargetWidth(){
     Block largestTarget = getLargestTarget();
-    if(largestTarget == null) return -1;
+    //Return -1 if there was no target
+    if(largestTarget == null)
+      return -1;
+    //Return the requested value
     return largestTarget.getWidth();
   }
+
   /**
    * @return Returns the height of the largest target.
    * This is generally going to be smaller than the width because of lighting.
    */
   public int getLargestTargetHeight(){
     Block largestTarget = getLargestTarget();
-    if(largestTarget == null) return -1;
+    //Return -1 if there was no target
+    if(largestTarget == null)
+      return -1;
+    //Return the requested value
     return largestTarget.getHeight();
   }
 }
